@@ -1,0 +1,22 @@
+{
+  "files.exclude": {
+    "out": false,
+    "dist": true,
+    "**/*.vsix": true
+  },
+  "search.exclude": {
+    "out": true,
+    "dist": true,
+    "**/*.vsix": true
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.tsc.autoDetect": "off",
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "compile",
+      "group": "build",
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "never"
+      },
+      "problemMatcher": [
+        "$tsc"
+      ]
+    },
+    {
+      "type": "npm",
+      "script": "watch",
+      "isBackground": true,
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "never"
+      },
+      "problemMatcher": [
+        "$tsc-watch"
+      ]
+    },
+    {
+      "label": "tasks: list",
+      "type": "shell",
+      "command": "echo ${input:pickArgs}"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "pickArgs",
+      "description": "Pick a task",
+      "type": "pickString",
+      "options": [
+        "compile",
+        "watch",
+        "test"
+      ]
+    }
+  ]
+}

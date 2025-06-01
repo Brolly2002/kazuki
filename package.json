@@ -1,0 +1,114 @@
+{
+  "name": "kazuki",
+  "displayName": "Kazuki",
+  "description": "A powerful VS Code extension with multiple productivity features",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages"
+  ],
+  "keywords": [
+    "productivity",
+    "tabs",
+    "management",
+    "auto-close"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kazuki.toggleAutoCloseTabs",
+        "title": "Toggle Auto-Close Other Tabs",
+        "category": "Kazuki"
+      },
+      {
+        "command": "kazuki.closeOtherTabs",
+        "title": "Close Other Tabs (Manual)",
+        "category": "Kazuki"
+      }
+    ],
+    "configuration": {
+      "title": "Kazuki - Auto Close Tabs",
+      "properties": {
+        "kazuki.autoCloseTabs.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable automatic closing of other tabs when switching to a new tab"
+        },
+        "kazuki.autoCloseTabs.delay": {
+          "type": "number",
+          "default": 100,
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "Delay in milliseconds before closing other tabs (0-5000ms)"
+        },
+        "kazuki.autoCloseTabs.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show auto-close tabs status in status bar"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "kazuki.toggleAutoCloseTabs",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "kazuki.closeOtherTabs",
+        "key": "ctrl+alt+shift+c",
+        "mac": "cmd+alt+shift+c",
+        "when": "editorTextFocus"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "kazuki.closeOtherTabs",
+          "group": "1_modification",
+          "when": "resourceExtname"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kazuki.toggleAutoCloseTabs"
+        },
+        {
+          "command": "kazuki.closeOtherTabs"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "@vscode/vsce": "^2.15.0",
+    "eslint": "^8.28.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.4",
+    "vscode": "^1.1.37"
+  }
+}
