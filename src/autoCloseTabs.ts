@@ -1,54 +1,71 @@
 import * as vscode from 'vscode';
 
 export class AutoCloseTabsManager {
-    private isEnabled: boolean = false;
     private disposables: vscode.Disposable[] = [];
     private activeEditorChangeListener: vscode.Disposable | undefined;
+    private statusBarItem: vscode.StatusBarItem | undefined;
+    private closeTimeout: NodeJS.Timeout | undefined;
+    private currentActiveEditor: vscode.TextEditor | undefined;
 
     constructor(private context: vscode.ExtensionContext) {
         this.loadSettings();
         this.registerCommands();
+        this.createStatusBarItem();
+        this.updateStatusBar();
     }
 
     private loadSettings() {
         const config = vscode.workspace.getConfiguration('kazuki');
-        this.isEnabled = config.get('autoCloseTabs.enabled', false);
+        const isEnabled = config.get('autoCloseTabs.enabled', false);
         
-        if (this.isEnabled) {
+        if (isEnabled) {
             this.enableAutoClose();
+        }
+        else {
+            this.disableAutoClose();
         }
     }
 
     private registerCommands() {
-        // Command to toggle auto-close feature
+
+        // Command to auto-close tabs
         const toggleCommand = vscode.commands.registerCommand(
-            'kazuki.toggleAutoCloseTabs',
-            () => this.toggleAutoClose()
+            'kazuki.AutoCloseTabs',
+            () => this.autoCloseHandler()
         );
 
         // Command to manually trigger close other tabs
         const closeOthersCommand = vscode.commands.registerCommand(
-            'kazuki.closeOtherTabs',
-            () => this.closeOtherTabs()
+            'kazuki.ManualCloseTabs',
+            () => this.manualCloseHandler()
         );
 
-        this.disposables.push(toggleCommand, closeOthersCommand);
+         // Listen for configuration changes
+        const configChangeListener = vscode.workspace.onDidChangeConfiguration(e => {
+            if (e.affectsConfiguration('kazuki.autoCloseTabs')) {
+                this.loadSettings();
+                this.updateStatusBar();
+            }
+        });
+
+        this.disposables.push(toggleCommand, closeOthersCommand, configChangeListener);
     }
 
-    private async toggleAutoClose() {
-        this.isEnabled = !this.isEnabled;
-        
-        // Update workspace configuration
+    private async autoCloseHandler() {
         const config = vscode.workspace.getConfiguration('kazuki');
-        await config.update('autoCloseTabs.enabled', this.isEnabled, vscode.ConfigurationTarget.Global);
+        await config.update('autoCloseTabs.enabled', true, vscode.ConfigurationTarget.Global);
+        this.enableAutoClose();
+        vscode.window.showInformationMessage('Auto-Close Other Tabs: Enabled');
+        this.updateStatusBar();        
+    }
 
-        if (this.isEnabled) {
-            this.enableAutoClose();
-            vscode.window.showInformationMessage('Auto-close tabs: Enabled');
-        } else {
-            this.disableAutoClose();
-            vscode.window.showInformationMessage('Auto-close tabs: Disabled');
-        }
+    private async manualCloseHandler() {
+        const config = vscode.workspace.getConfiguration('kazuki');
+        await config.update('autoCloseTabs.enabled', false, vscode.ConfigurationTarget.Global);
+        
+        this.disableAutoClose();
+        vscode.window.showInformationMessage('Auto-Close Other Tabs: Disabled');
+        this.updateStatusBar();
     }
 
     private enableAutoClose() {
@@ -56,94 +73,119 @@ export class AutoCloseTabsManager {
             return; // Already enabled
         }
 
-        // Listen for active editor changes
         this.activeEditorChangeListener = vscode.window.onDidChangeActiveTextEditor(
-            (editor) => {
-                if (editor && this.isEnabled) {
-                    // Small delay to ensure the editor is fully loaded
-                    setTimeout(() => this.closeOtherTabs(), 100);
-                }
-            }
+            (editor) => this.onActiveEditorChanged(editor)
         );
-
-        // Also listen for when tabs are opened
-        const tabChangeListener = vscode.window.tabGroups.onDidChangeTabs(
-            (event) => {
-                if (this.isEnabled && event.opened.length > 0) {
-                    setTimeout(() => this.closeOtherTabs(), 100);
-                }
-            }
-        );
-
-        this.disposables.push(this.activeEditorChangeListener, tabChangeListener);
+        
+        this.disposables.push(this.activeEditorChangeListener);
+        console.log('Auto-close tabs enabled');
     }
-
+    
     private disableAutoClose() {
         if (this.activeEditorChangeListener) {
             this.activeEditorChangeListener.dispose();
             this.activeEditorChangeListener = undefined;
         }
+        
+        // Clear any pending timeout
+        if (this.closeTimeout) {
+            clearTimeout(this.closeTimeout);
+            this.closeTimeout = undefined;
+        }
+        
+        console.log('Auto-close tabs disabled');
     }
 
-    private async closeOtherTabs() {
+    private onActiveEditorChanged(editor: vscode.TextEditor | undefined) {
+        const config = vscode.workspace.getConfiguration('kazuki');
+        const isEnabled = config.get('autoCloseTabs.enabled', false);
+        
+        if (!editor || !isEnabled) {
+            return;
+        }
+
+        // Clear any existing timeout
+        if (this.closeTimeout) {
+            clearTimeout(this.closeTimeout);
+        }
+
+        // Store the current active editor
+        this.currentActiveEditor = editor;
+
+        // Set up delayed closing
+        const delay = config.get('autoCloseTabs.delay', 100);
+
+        this.closeTimeout = setTimeout(() => {
+            this.closeOtherTabs(editor);
+        }, delay);
+    }
+
+    private async closeOtherTabs(keepEditor: vscode.TextEditor) {
         try {
-            const activeEditor = vscode.window.activeTextEditor;
-            if (!activeEditor) {
-                return;
-            }
-
-            const activeTabGroup = vscode.window.tabGroups.activeTabGroup;
-            if (!activeTabGroup) {
-                return;
-            }
-
-            // Find the active tab
-            const activeTab = activeTabGroup.tabs.find(tab => tab.isActive);
-            if (!activeTab) {
-                return;
-            }
-
-            // Get all other tabs in the active group
-            const otherTabs = activeTabGroup.tabs.filter(tab => !tab.isActive);
+            const allTabs = vscode.window.tabGroups.all;
             
-            if (otherTabs.length === 0) {
-                return;
+            for (const tabGroup of allTabs) {
+                const tabsToClose: vscode.Tab[] = [];
+                
+                for (const tab of tabGroup.tabs) {
+                    if (!tab.isActive) {
+                        tabsToClose.push(tab);
+                    }
+                }
+
+                // Close tabs in batches to avoid overwhelming VS Code
+                if (tabsToClose.length > 0) {
+                    await vscode.window.tabGroups.close(tabsToClose);
+                }
             }
-
-            // Close other tabs
-            await vscode.window.tabGroups.close(otherTabs);
-
         } catch (error) {
             console.error('Error closing other tabs:', error);
-            // Fallback method using workbench commands
-            await this.fallbackCloseOtherTabs();
+            vscode.window.showErrorMessage('Failed to close other tabs');
         }
     }
 
-    private async fallbackCloseOtherTabs() {
-        try {
-            // Alternative approach using workbench commands
-            await vscode.commands.executeCommand('workbench.action.closeOtherEditors');
-        } catch (error) {
-            console.error('Fallback close other tabs failed:', error);
-        }
-    }
-
-    // Method to get current status for status bar or other UI elements
-    public getStatus(): { enabled: boolean; activeTabsCount: number } {
-        const activeTabGroup = vscode.window.tabGroups.activeTabGroup;
-        const activeTabsCount = activeTabGroup ? activeTabGroup.tabs.length : 0;
+    private createStatusBarItem() {
+        const config = vscode.workspace.getConfiguration('kazuki');
+        const showStatusBar = config.get('autoCloseTabs.showStatusBar', true);
         
-        return {
-            enabled: this.isEnabled,
-            activeTabsCount
-        };
+        if (showStatusBar) {
+            this.statusBarItem = vscode.window.createStatusBarItem(
+                vscode.StatusBarAlignment.Right, 
+                100
+            );
+            this.statusBarItem.command = 'kazuki.AutoCloseTabs';
+            this.statusBarItem.tooltip = 'Click to toggle Auto-Close Other Tabs';
+            this.disposables.push(this.statusBarItem);
+        }
+    }
+
+    public updateStatusBar() {
+        if (!this.statusBarItem) return;
+
+        const config = vscode.workspace.getConfiguration('kazuki');
+        const showStatusBar = config.get('autoCloseTabs.showStatusBar', true);
+        const isEnabled = config.get('autoCloseTabs.enabled', false);
+
+        if (showStatusBar) {
+            this.statusBarItem.text = isEnabled ? '$(close-all) Auto-Close: ON' : '$(close-all) Auto-Close: OFF';
+            this.statusBarItem.backgroundColor = isEnabled ? 
+                new vscode.ThemeColor('statusBarItem.warningBackground') : 
+                undefined;
+            this.statusBarItem.show();
+        } else {
+            this.statusBarItem.hide();
+        }
     }
 
     public dispose() {
+        // Clean up all disposables
         this.disableAutoClose();
         this.disposables.forEach(d => d.dispose());
         this.disposables = [];
+        
+        if (this.statusBarItem) {
+            this.statusBarItem.dispose();
+        }
     }
 }
 
@@ -161,19 +203,21 @@ export const autoCloseTabsConfiguration = {
     }
 };
 
+
 // Commands for package.json
 export const autoCloseTabsCommands = [
     {
-        "command": "kazuki.toggleAutoCloseTabs",
+        "command": "kazuki.AutoCloseTabs",
         "title": "Toggle Auto-Close Other Tabs",
         "category": "Kazuki"
     },
     {
-        "command": "kazuki.closeOtherTabs",
+        "command": "kazuki.ManualCloseTabs",
         "title": "Close Other Tabs (Manual)",
         "category": "Kazuki"
     }
 ];
+
 
 // Example usage in your main extension file (extension.ts)
 export function activateAutoCloseTabs(context: vscode.ExtensionContext): AutoCloseTabsManager {
@@ -183,34 +227,4 @@ export function activateAutoCloseTabs(context: vscode.ExtensionContext): AutoClo
     context.subscriptions.push(autoCloseManager);
     
     return autoCloseManager;
-}
-
-// Status bar integration (optional)
-export class AutoCloseTabsStatusBar {
-    private statusBarItem: vscode.StatusBarItem;
-    
-    constructor(private manager: AutoCloseTabsManager) {
-        this.statusBarItem = vscode.window.createStatusBarItem(
-            vscode.StatusBarAlignment.Right, 
-            100
-        );
-        this.statusBarItem.command = 'kazuki.toggleAutoCloseTabs';
-        this.updateStatusBar();
-        this.statusBarItem.show();
-    }
-
-    public updateStatusBar() {
-        const status = this.manager.getStatus();
-        const icon = status.enabled ? '$(close-all)' : '$(circle-outline)';
-        const text = `${icon} Auto-Close: ${status.enabled ? 'ON' : 'OFF'}`;
-        
-        this.statusBarItem.text = text;
-        this.statusBarItem.tooltip = status.enabled 
-            ? 'Auto-close other tabs is enabled. Click to disable.'
-            : 'Auto-close other tabs is disabled. Click to enable.';
-    }
-
-    public dispose() {
-        this.statusBarItem.dispose();
-    }
 }
