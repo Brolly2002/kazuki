@@ -207,12 +207,30 @@ export class FolderGeneratorManager implements vscode.Disposable {
         console.log('Structure:', JSON.stringify(structure, null, 2));
 
         const orderedStructure = new Map<string, string[]>(Object.entries(structure));
-        
-        for (const [itemName, children] of orderedStructure) {
+        const degree: Map<string, number> = new Map();
 
-            if (createdPaths.has(itemName)) {
-                continue;
+        for (const [itemName, children] of orderedStructure) {
+            for (const child of children) {
+                    degree.set(child, (degree.get(child) || 0) + 1);
             }
+        }
+
+
+        const roots = Array()
+
+        for (const [itemName, children] of orderedStructure) {
+            if (!degree.has(itemName) || degree.get(itemName) === 0) {  
+                roots.push(itemName);
+            }
+        }
+
+        for (const [item, count] of degree) {
+            console.log(`Item: ${item}, Degree: ${count}`);
+        }
+
+        console.log('Roots:', roots);
+        
+        for (const itemName of roots) {
 
             const fullPath = path.join(basePath, itemName);
 
@@ -222,12 +240,11 @@ export class FolderGeneratorManager implements vscode.Disposable {
             });
 
             console.log(`Processing item: ${itemName} at path: ${fullPath}`);
-            console.log(`Children: ${JSON.stringify(children)}`);
         
             // Process queue using BFS
             while (queue.length > 0) {
                 const { element, path: currentPath } = queue.shift()!;
-                const itemPath = path.join(currentPath, element);
+                const itemPath = currentPath
                 
                 if (createdPaths.has(element)) {
                     continue;
@@ -241,8 +258,8 @@ export class FolderGeneratorManager implements vscode.Disposable {
 
                 try {
                     if (isFile) {
-                        if (!fs.existsSync(currentPath)) {
-                            fs.writeFileSync(currentPath, '', 'utf8');
+                        if (!fs.existsSync(itemPath)) {
+                            fs.writeFileSync(itemPath, '', 'utf8');
                         }
                     }
                     else {
@@ -251,7 +268,7 @@ export class FolderGeneratorManager implements vscode.Disposable {
                             createdPaths.add(itemName);
                         }
                         // Add children to queue for next level processing
-                        for (const childName of Object.keys(children)) {
+                        for (const childName of children) {
                             const childPath = path.join(itemPath, childName);
                             queue.push({
                                 element: childName,

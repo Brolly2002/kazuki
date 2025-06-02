@@ -17,6 +17,10 @@ def generate_folder_structure_prompt(user_prompt):
     Do NOT include comments, descriptions, or explanations in the paths.
     Do NOT use code blocks or markdown formatting.
     Generate generic files which can be used in most projects of the tech stack mentioned by the user.
+    Include common files like README.md, .gitignore, and LICENSE if applicable.
+    If the user asks for a specific tech stack, include relevant files and folders
+    Eg: .js files for JavaScript projects, .py files for Python projects, etc.
+
     Just list the paths directly, like:
     
     backend/app/app.py
