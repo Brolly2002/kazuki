@@ -16,6 +16,7 @@ def generate_folder_structure_prompt(user_prompt):
     List each folder and file path clearly, one per line, using forward slashes (/) to separate folders and files.
     Do NOT include comments, descriptions, or explanations in the paths.
     Do NOT use code blocks or markdown formatting.
+    Generate generic files which can be used in most projects of the tech stack mentioned by the user.
     Just list the paths directly, like:
     
     backend/app/app.py
@@ -60,7 +61,8 @@ def generate_structure():
         
         # Parse the response to create the folder structure
         folder_structure = parse_llm_response_advanced(llm_response)
-        
+        print("Parsed Folder Structure:")
+        print(json.dumps(folder_structure, indent=2))
         return jsonify({
             'success': True,
             'structure': folder_structure,
