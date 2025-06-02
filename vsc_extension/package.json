@@ -32,8 +32,37 @@
         "command": "kazuki.ManualCloseTabs",
         "title": "Close Other Tabs (Manual)",
         "category": "Kazuki"
+      },
+      {
+        "command": "kazuki.generateFolder",
+        "title": "Generate Folder Structure",
+        "category": "Kazuki",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "kazuki.generateFolderInCurrent",
+        "title": "Generate in Current Workspace",
+        "category": "Kazuki",
+        "icon": "$(folder-active)"
       }
     ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "kazuki.generateFolderInCurrent",
+          "group": "kazuki@1",
+          "when": "explorerViewletVisible"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kazuki.generateFolder"
+        },
+        {
+          "command": "kazuki.generateFolderInCurrent"
+        }
+      ]
+    },
     "configuration": {
       "title": "Kazuki - Auto Close Tabs",
       "properties": {
@@ -53,6 +82,16 @@
           "type": "boolean",
           "default": true,
           "description": "Show auto-close tabs status in status bar"
+        },
+        "kazuki.folderGenerator.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:5000",
+          "description": "URL of the Flask backend service for folder generation"
+        },
+        "kazuki.folderGenerator.showStatusBar": {
+          "type": "boolean", 
+          "default": true,
+          "description": "Show folder generator button in status bar"
         }
       }
     }
@@ -79,5 +118,9 @@
     "mocha": "^10.1.0",
     "typescript": "^4.9.4",
     "vscode": "^1.1.37"
+  },
+  "dependencies": {
+    "axios": "^1.9.0",
+    "node-fetch": "^3.3.2"
   }
 }
