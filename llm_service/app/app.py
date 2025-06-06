@@ -164,8 +164,7 @@ def query_rag():
 
     print("Top 3 points Done:")
     
-    full_prompt = generate_folder_structure_prompt(
-        f'''
+    full_prompt = f'''
         You are an AI assistant that helps users to answer questions based on the provided context.
         The user has asked: "{user_query}".
         Here are the top 3 relevant points from the context:
@@ -174,9 +173,11 @@ def query_rag():
         Do not include any explanations or additional information, just the answer.
         If the context is not sufficient to answer the question, respond with "I don't know".
         If the context is sufficient, provide a direct answer.
-        '''
-    )
+        There should be a verbose answer to the user's question.
+    '''
     
+    # print("Full prompt sent to LLM:")
+    # print(full_prompt)
     model = 'llama3.2'
 
     response = ollama.chat(model=model, messages=[
