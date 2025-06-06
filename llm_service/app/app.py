@@ -1,7 +1,15 @@
-from flask import Flask, request, jsonify
-import ollama
-import json
+import os
 import re
+import sys
+import json
+import ollama
+from flask import Flask, request, jsonify
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from qdrant_service.qdrant_utils import VectorSearch
+
+vector_search = VectorSearch()
 
 app = Flask(__name__)
 
@@ -119,6 +127,74 @@ def parse_llm_response_advanced(response):
                     structure[current].append(next_item)
     
     return structure
+
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    data = request.get_json()
+    pdf_path = data.get('pdf_path')
+    print(f"Received PDF path: {pdf_path}")
+    vector_search.store_text_from_pdf(pdf_path=pdf_path)
+    return jsonify({'message': 'PDF received successfully.'}), 200
+
+
+@app.route('/query', methods=['POST'])
+def query_rag():
+    data = request.get_json()
+    user_query = data.get('query')
+    print(f"Received query: {user_query}")
+    points_list = vector_search.query_all_collections(
+        query_text=user_query,
+        limit=3,
+        score_threshold=0.5
+    )
+    merged_points = []
+    for points in points_list:
+        for point in points.points:
+            print(f"Score: {point.score}, ")
+            merged_points.append({
+                'score': point.score,
+                'text': point.payload['text']
+            })
+    # sort by score in descending order
+    merged_points.sort(key=lambda x: x['score'], reverse=True)
+    top_three_points = []
+    for i in range(min(3, len(merged_points))):
+        top_three_points.append(merged_points[i])
+
+    print("Top 3 points Done:")
+    
+    full_prompt = generate_folder_structure_prompt(
+        f'''
+        You are an AI assistant that helps users to answer questions based on the provided context.
+        The user has asked: "{user_query}".
+        Here are the top 3 relevant points from the context:
+        {json.dumps(top_three_points, indent=2)}
+        Based on this context, provide a concise and accurate answer to the user's question.
+        Do not include any explanations or additional information, just the answer.
+        If the context is not sufficient to answer the question, respond with "I don't know".
+        If the context is sufficient, provide a direct answer.
+        '''
+    )
+    
+    model = 'llama3.2'
+
+    response = ollama.chat(model=model, messages=[
+            {
+                'role': 'user',
+                'content': full_prompt,
+            },
+        ])
+        
+    llm_response = response['message']['content']
+
+    print("LLM Response:")
+    print(llm_response)
+
+
+    return jsonify({'answer': llm_response}), 200
+
+
 
 
 @app.route('/health', methods=['GET'])

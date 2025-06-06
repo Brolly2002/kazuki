@@ -38,6 +38,18 @@ class VectorSearch:
         print(f"Loaded model '{model_name}' with {self.vector_size}D embeddings")
     
 
+    def get_collection_name_from_pdf(self, pdf_path: str) -> str:
+        """Extract collection name from PDF filename"""
+        filename = os.path.basename(pdf_path)
+        # Remove .pdf extension and replace spaces/special chars with underscores
+        collection_name = os.path.splitext(filename)[0]
+        collection_name = collection_name.replace(' ', '_').replace('-', '_')
+        # Ensure it starts with a letter (Qdrant requirement)
+        if not collection_name[0].isalpha():
+            collection_name = f"pdf_{collection_name}"
+        return collection_name.lower()
+
+
     def extract_text_from_pdf(self, pdf_path: str) -> str:
         """Extract text from PDF file"""
         if not os.path.exists(pdf_path):
@@ -90,7 +102,7 @@ class VectorSearch:
         print(f"Created collection '{collection_name}' with {self.vector_size}D vectors")
     
 
-    def store_text_from_pdf(self, pdf_path: str, collection_name: str, chunk_size: int = 500, overlap: int = 50, recreate_collection: bool = True) -> str:
+    def store_text_from_pdf(self, pdf_path: str, collection_name: str = None, chunk_size: int = 500, overlap: int = 50, recreate_collection: bool = True) -> str:
         """
         Process PDF and store in Qdrant
         
@@ -104,6 +116,9 @@ class VectorSearch:
             Collection name used for storage
         """
         print(f"Processing PDF: {pdf_path}")
+
+        if (collection_name is None):
+            collection_name = self.get_collection_name_from_pdf(pdf_path)
         
         print(f"Using collection: {collection_name}")
         
@@ -165,6 +180,9 @@ class VectorSearch:
             Search results or None if collection doesn't exist
         """
         
+        if (collection_name is None):
+            collection_name = self.get_collection_name_from_pdf(pdf_path=query_text)
+        
         # Check if collection exists
         if not self.client.collection_exists(collection_name=collection_name):
             print(f"Collection '{collection_name}' doesn't exist. Process the PDF first.")
@@ -183,6 +201,34 @@ class VectorSearch:
         )
         
         print(f"Found {len(results.points)} results:")
+        
+        return results
+    
+    def query_all_collections(self, query_text: str, limit: int = 5, score_threshold: float = 0.0) -> List[Optional[object]]:
+        """
+        Search for similar content across all collections
+        
+        Args:
+            query_text: Text to search for
+            limit: Maximum number of results to return per collection
+            score_threshold: Minimum similarity score
+            
+        Returns:
+            List of search results for each collection
+        """
+        collections = self.list_collections()
+        print(collections)
+        results = []
+        
+        for collection_name in collections:
+            print(f"Searching in collection '{collection_name}'")
+            result = self.query_collection(
+                collection_name=collection_name,
+                query_text=query_text,
+                limit=limit,
+                score_threshold=score_threshold
+            )
+            results.append(result)
         
         return results
     

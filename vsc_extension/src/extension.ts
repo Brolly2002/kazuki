@@ -1,10 +1,14 @@
 import * as vscode from 'vscode';
 import { AutoCloseTabsManager } from './autoCloseTabs';
 import { FolderGeneratorManager } from './folderGenerator';
+import { RagManager } from './ragManager';
+
 
 // Global instances
 let autoCloseManager: AutoCloseTabsManager | undefined;
 let folderGeneratorManager: FolderGeneratorManager | undefined;
+let ragManager: RagManager | undefined;
+
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Kazuki extension is now active!');
@@ -12,9 +16,10 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize managers
     autoCloseManager = new AutoCloseTabsManager(context);
     folderGeneratorManager = new FolderGeneratorManager(context);
+    ragManager = new RagManager(context);
     
     // Add to context subscriptions for proper cleanup
-    context.subscriptions.push(autoCloseManager, folderGeneratorManager);
+    context.subscriptions.push(autoCloseManager, folderGeneratorManager, ragManager);
     
     // Register existing commands
     const showInfoCommand = vscode.commands.registerCommand('kazuki.showInfo', () => {
@@ -48,6 +53,10 @@ export function deactivate() {
     if (folderGeneratorManager) {
         folderGeneratorManager.dispose();
         folderGeneratorManager = undefined;
+    }
+    if (ragManager) {
+        ragManager.dispose();
+        ragManager = undefined;
     }
 }
 

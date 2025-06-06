@@ -44,6 +44,16 @@
         "title": "Generate in Current Workspace",
         "category": "Kazuki",
         "icon": "$(folder-active)"
+      },
+      {
+        "command": "kazuki.updateRag",
+        "title": "Update your Customized RAG",
+        "category": "Kazuki"
+      },
+      {
+        "command": "kazuki.queryRag",
+        "title": "Query your Customized RAG",
+        "category": "Kazuki"
       }
     ],
     "menus": {
@@ -92,6 +102,11 @@
           "type": "boolean", 
           "default": true,
           "description": "Show folder generator button in status bar"
+        },
+        "kazuki.rag.backendUrl": {
+          "type": "string",
+          "default": "http://localhost:5000",
+          "description": "Backend URL for the RAG server"
         }
       }
     }
