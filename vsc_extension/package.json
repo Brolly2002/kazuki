@@ -54,6 +54,11 @@
         "command": "kazuki.queryRag",
         "title": "Query your Customized RAG",
         "category": "Kazuki"
+      },
+      {
+        "command": "kazuki.removeUnusedImports",
+        "title": "Remove Unused Imports",
+        "category": "Kazuki"
       }
     ],
     "menus": {
