@@ -1,27 +1,27 @@
-## Kazuki Workspace
+## Kazuki Workspace 🚀
 
 Kazuki is a productivity toolkit for developers, combining a VS Code extension with a backend LLM service. It offers smart tab management, AI-powered folder structure generation, RAG (Retrieval-Augmented Generation) document ingestion and querying, and automatic removal of unused imports.
 
 ---
 
-## Features
+## Features ✨
 
-### 1. Auto-Close Tabs
+### 1. Auto-Close Tabs 🗂️
 Automatically closes other tabs when you switch to a new one, helping you keep your workspace tidy and focused.
 
-### 2. AI Folder Structure Generator
+### 2. AI Folder Structure Generator 🏗️
 Describe your project in natural language and generate a complete folder and file structure using an LLM backend.
 
-### 3. RAG Agent Integration
+### 3. RAG Agent Integration 📚🤖
 - **Feed Documents:** Upload PDF documents to your custom Retrieval-Augmented Generation (RAG) agent for knowledge ingestion.
 - **Query Knowledge Base:** Ask questions and get answers from your uploaded documents directly within VS Code.
 
-### 4. Remove Unused Imports
+### 4. Remove Unused Imports 🧹
 Instantly delete unused import statements from your JavaScript and TypeScript files to keep your code clean and efficient.
 
 ---
 
-## Folder Structure
+## Folder Structure 🗃️
 
 ```
 llm_service/
@@ -54,9 +54,9 @@ vsc_extension/
 
 ---
 
-## Folder and File Explanations
+## Folder and File Explanations 📝
 
-### llm_service/
+### llm_service/ 🐍
 Backend service for AI features, built with Flask, Ollama, and Qdrant.
 
 - **requirements.txt**  
@@ -76,7 +76,7 @@ Backend service for AI features, built with Flask, Ollama, and Qdrant.
 
 ---
 
-### vsc_extension/
+### vsc_extension/ 🧩
 Source code for the VS Code extension.
 
 - **package.json**  
@@ -99,7 +99,7 @@ Source code for the VS Code extension.
 
 ---
 
-## Backend Overview
+## Backend Overview 🛠️
 
 - **Flask API**  
   Provides endpoints for folder structure generation and RAG document management (`app/app.py`).
@@ -112,4 +112,4 @@ Source code for the VS Code extension.
 
 ---
 
-Kazuki helps you keep your workspace clean, generate project structures, manage knowledge, and write cleaner code—all from within VS Code!
+Kazuki helps you keep your workspace clean, generate project structures, manage knowledge, and write cleaner code—all from within VS Code! 🎉
